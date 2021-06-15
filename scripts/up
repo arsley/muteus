@@ -5,41 +5,65 @@ NETWORK='muteus_default'
 . .env
 
 # create network
-docker network $NETWORK
+docker network inspect $NETWORK > /dev/null
+if [ $? -eq 1 ]; then
+  docker network create $NETWORK
+fi
 
-# up containers
-docker run -d --restart always --name muteus_redis \
-  -v redis_data:/data \
-  --network $NETWORK \
-  redis:alpine
-docker run -d --restart always --name muteus_pg \
-  -v pgdata:/var/lib/postgresql/data \
-  --network $NETWORK \
-  -e POSTGRES_USER=$POSTGRES_USER \
-  -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
-  postgres:12-alpine
-docker run -d --restart always --name muteus_galactus \
-  --network $NETWORK \
-  -p ${GALACTUS_EXTERNAL_PORT:-8123}:${BROKER_PORT} \
-  -e DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:?err} \
-  -e BROKER_PORT=${BROKER_PORT} \
-  -e REDIS_ADDR=${GALACTUS_REDIS_ADDR} \
-  -e GALACTUS_PORT=${GALACTUS_PORT} \
-  automuteus/galactus:${GALACTUS_TAG:?err}
-docker run -d --restart always --name muteus_automuteus \
-  -v botlogs:/app/logs \
-  --network $NETWORK \
-  -p ${SERVICE_PORT:-5000}:5000 \
-  -e DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:?err} \
-  -e HOST=${GALACTUS_HOST:?err} \
-  -e POSTGRES_USER=${POSTGRES_USER:?err} \
-  -e POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?err} \
-  -e WORKER_BOT_TOKENS=${WORKER_BOT_TOKENS:-} \
-  -e EMOJI_GUILD_ID=${EMOJI_GUILD_ID:-} \
-  -e CAPTURE_TIMEOUT=${CAPTURE_TIMEOUT:-} \
-  -e AUTOMUTEUS_LISTENING=${AUTOMUTEUS_LISTENING:-} \
-  -e REDIS_ADDR=${REDIS_ADDR} \
-  -e GALACTUS_ADDR=${GALACTUS_ADDR} \
-  -e POSTGRES_ADDR=${POSTGRES_ADDR} \
-  denverquane/amongusdiscord:${AUTOMUTEUS_TAG:?err}
+# create containers
+docker container inspect muteus_redis
+if [ $? -eq 1 ]; then
+  docker container create --restart always --name muteus_redis \
+    -v redis_data:/data \
+    --network $NETWORK \
+    redis:alpine
+fi
+
+docker container inspect muteus_pg
+if [ $? -eq 1 ]; then
+  docker container create --restart always --name muteus_pg \
+    -v pgdata:/var/lib/postgresql/data \
+    --network $NETWORK \
+    -e POSTGRES_USER=$POSTGRES_USER \
+    -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
+    postgres:12-alpine
+fi
+
+docker container inspect muteus_galactus
+if [ $? -eq 1 ]; then
+  docker container create --restart always --name muteus_galactus \
+    --network $NETWORK \
+    -p ${GALACTUS_EXTERNAL_PORT:-8123}:${BROKER_PORT} \
+    -e DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:?err} \
+    -e BROKER_PORT=${BROKER_PORT} \
+    -e REDIS_ADDR=${GALACTUS_REDIS_ADDR} \
+    -e GALACTUS_PORT=${GALACTUS_PORT} \
+    automuteus/galactus:${GALACTUS_TAG:?err}
+fi
+
+docker container inspect muteus_automuteus
+if [ $? -eq 1 ]; then
+  docker container create --restart always --name muteus_automuteus \
+    -v botlogs:/app/logs \
+    --network $NETWORK \
+    -p ${SERVICE_PORT:-5000}:5000 \
+    -e DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:?err} \
+    -e HOST=${GALACTUS_HOST:?err} \
+    -e POSTGRES_USER=${POSTGRES_USER:?err} \
+    -e POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?err} \
+    -e WORKER_BOT_TOKENS=${WORKER_BOT_TOKENS:-} \
+    -e EMOJI_GUILD_ID=${EMOJI_GUILD_ID:-} \
+    -e CAPTURE_TIMEOUT=${CAPTURE_TIMEOUT:-} \
+    -e AUTOMUTEUS_LISTENING=${AUTOMUTEUS_LISTENING:-} \
+    -e REDIS_ADDR=${REDIS_ADDR} \
+    -e GALACTUS_ADDR=${GALACTUS_ADDR} \
+    -e POSTGRES_ADDR=${POSTGRES_ADDR} \
+    denverquane/amongusdiscord:${AUTOMUTEUS_TAG:?err}
+fi
+
+# start containers
+docker start muteus_redis
+docker start muteus_pg
+docker start muteus_galactus
+docker start muteus_automuteus
 
