@@ -1,0 +1,7 @@
+#!/bin/bash
+
+docker stop muteus_automuteus
+docker stop muteus_galactus
+docker stop muteus_pg
+docker stop muteus_redis
+

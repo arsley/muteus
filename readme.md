@@ -7,7 +7,7 @@ cp .env.sample .env
 ./scripts/up
 
 # deactive bot
-./scripts/down
+./scripts/stop
 ```
 
 reference: https://github.com/denverquane/automuteus#docker-compose
